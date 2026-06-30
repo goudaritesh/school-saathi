@@ -1,0 +1,204 @@
+const User = require('../models/User');
+const DriverProfile = require('../models/DriverProfile');
+const ParentProfile = require('../models/ParentProfile');
+const Payment = require('../models/Payment');
+const Attendance = require('../models/Attendance');
+const Notification = require('../models/Notification');
+
+// @desc    Get system stats for Admin Dashboard
+// @route   GET /api/admin/stats
+// @access  Private/Admin
+const getSystemStats = async (req, res, next) => {
+    try {
+        const totalUsers = await User.countDocuments();
+        const totalDrivers = await User.countDocuments({ role: 'Driver' });
+        const totalParents = await User.countDocuments({ role: 'Parent' });
+        
+        const paidPayments = await Payment.find({ status: 'Paid' });
+        const totalRevenue = paidPayments.reduce((sum, payment) => sum + payment.amount, 0);
+
+        res.json({
+            totalUsers,
+            totalDrivers,
+            totalParents,
+            totalRevenue,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get all drivers
+// @route   GET /api/admin/drivers
+// @access  Private/Admin
+const getAllDrivers = async (req, res, next) => {
+    try {
+        const drivers = await DriverProfile.find().populate('user', 'name email phone isActive');
+        res.json(drivers);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get all parents
+// @route   GET /api/admin/parents
+// @access  Private/Admin
+const getAllParents = async (req, res, next) => {
+    try {
+        const parents = await ParentProfile.find()
+            .populate('user', 'name email phone isActive')
+            .populate('connected_driver', 'name');
+        res.json(parents);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Update user status (Suspend/Activate)
+// @route   PUT /api/admin/users/:id/status
+// @access  Private/Admin
+const updateUserStatus = async (req, res, next) => {
+    try {
+        const { isActive } = req.body;
+        const user = await User.findById(req.params.id);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.isActive = isActive;
+        await user.save();
+
+        res.json({ message: `User ${isActive ? 'activated' : 'suspended'} successfully`, user });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Delete user and associated profile
+// @route   DELETE /api/admin/users/:id
+// @access  Private/Admin
+const deleteUser = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.role === 'Driver') {
+            await DriverProfile.findOneAndDelete({ user: user._id });
+        } else if (user.role === 'Parent') {
+            await ParentProfile.findOneAndDelete({ user: user._id });
+        }
+
+        await User.findByIdAndDelete(req.params.id);
+        res.json({ message: 'User and profile deleted successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get all students (Aggregated from Parent profiles)
+// @route   GET /api/admin/students
+// @access  Private/Admin
+const getAllStudents = async (req, res, next) => {
+    try {
+        const parents = await ParentProfile.find()
+            .populate('user', 'name')
+            .populate('connected_driver', 'name');
+            
+        let students = [];
+        
+        parents.forEach(parent => {
+            parent.children.forEach(child => {
+                students.push({
+                    studentId: child._id,
+                    name: child.name,
+                    age: child.age,
+                    class: child.class_info,
+                    parentName: parent.user.name,
+                    driverName: parent.connected_driver ? parent.connected_driver.name : 'Unassigned',
+                    address: parent.address
+                });
+            });
+        });
+
+        res.json(students);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get global fee reports
+// @route   GET /api/admin/reports/fees
+// @access  Private/Admin
+const getFeeReports = async (req, res, next) => {
+    try {
+        const payments = await Payment.find()
+            .populate('parent', 'name')
+            .populate('driver', 'name')
+            .sort({ dueDate: -1 });
+            
+        res.json(payments);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get global attendance reports
+// @route   GET /api/admin/reports/attendance
+// @access  Private/Admin
+const getAttendanceReports = async (req, res, next) => {
+    try {
+        const attendance = await Attendance.find()
+            .populate('driver', 'name')
+            .populate('parent', 'name')
+            .sort({ date: -1 });
+            
+        res.json(attendance);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Broadcast a notification to users
+// @route   POST /api/admin/notifications/broadcast
+// @access  Private/Admin
+const broadcastNotification = async (req, res, next) => {
+    try {
+        const { targetRole, title, body } = req.body; // targetRole: 'Parent', 'Driver', 'All'
+        
+        let query = {};
+        if (targetRole === 'Parent' || targetRole === 'Driver') {
+            query.role = targetRole;
+        }
+
+        const users = await User.find(query).select('_id');
+        
+        const notifications = users.map(user => ({
+            recipient: user._id,
+            title,
+            body,
+            type: 'SYSTEM_BROADCAST'
+        }));
+
+        await Notification.insertMany(notifications);
+
+        res.json({ message: `Broadcast sent to ${users.length} users.` });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = {
+    getSystemStats,
+    getAllDrivers,
+    getAllParents,
+    updateUserStatus,
+    deleteUser,
+    getAllStudents,
+    getFeeReports,
+    getAttendanceReports,
+    broadcastNotification
+};
