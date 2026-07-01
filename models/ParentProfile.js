@@ -14,6 +14,30 @@ const parentProfileSchema = mongoose.Schema(
         child_photo_url: {
             type: String,
         },
+        class_info: {
+            type: String,
+        },
+        school_name: {
+            type: String,
+        },
+        roll_number: {
+            type: String,
+        },
+        pickup_time: {
+            type: String,
+        },
+        drop_time: {
+            type: String,
+        },
+        pickup_address: {
+            type: String,
+        },
+        drop_address: {
+            type: String,
+        },
+        emergency_contact: {
+            type: String,
+        },
         connected_driver: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User', // Reference to the driver's User object

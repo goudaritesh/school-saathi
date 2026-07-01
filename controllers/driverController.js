@@ -1,5 +1,7 @@
 const ParentProfile = require('../models/ParentProfile');
 const DriverProfile = require('../models/DriverProfile');
+const Attendance = require('../models/Attendance');
+const Payment = require('../models/Payment');
 
 // @desc    Get driver dashboard stats
 // @route   GET /api/driver/dashboard
@@ -18,29 +20,42 @@ const getDashboardStats = async (req, res, next) => {
         // 1. Total Students: Count of ParentProfiles connected to this driver
         const totalStudents = await ParentProfile.countDocuments({ connected_driver: driverId });
 
-        // Dummy data for now for the other stats (until we build attendance/payments)
-        const presentCount = Math.max(0, totalStudents - 2); // Just for demo
-        const todayEarnings = 80;
-        const pendingFees = 150;
+        // 2. Present Count: Count of unique parents who have 'Picked Up' or 'Dropped Off' status today
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const presentAttendances = await Attendance.find({
+            driver: driverId,
+            date: { $gte: startOfDay },
+            status: { $in: ['Picked Up', 'Dropped Off'] }
+        }).distinct('parent_profile');
+        
+        const presentCount = presentAttendances.length;
+
+        // 3. Earnings & Fees: Calculate from Payment model
+        const payments = await Payment.find({ driver: driverId });
+        
+        let todayEarnings = 0;
+        let pendingFees = 0;
+        
+        payments.forEach(payment => {
+            if (payment.status === 'Paid') {
+                // If paid today, count in todayEarnings (or you can just make it total earnings for now)
+                // We'll just sum all 'Paid' as earnings to give a number, or check if paidAt is today
+                if (payment.paidAt && payment.paidAt >= startOfDay) {
+                    todayEarnings += payment.amount;
+                }
+            } else if (payment.status === 'Pending') {
+                pendingFees += payment.amount;
+            }
+        });
 
         const recentActivity = [
             {
                 id: 1,
-                type: 'attendance',
-                title: 'Attendance marked for John Doe',
-                subtitle: 'Picked up at Maple Street • 07:42 AM',
-            },
-            {
-                id: 2,
-                type: 'payment',
-                title: 'Fee collected from Sarah Smith',
-                subtitle: 'Monthly subscription • $150.00',
-            },
-            {
-                id: 3,
                 type: 'system',
                 title: 'Route Update',
-                subtitle: 'Road closure on 5th Ave, route optimized.',
+                subtitle: 'Your route looks clear today.',
             }
         ];
 
@@ -71,7 +86,24 @@ const getAllDrivers = async (req, res, next) => {
     }
 };
 
+// @desc    Get students connected to the driver
+// @route   GET /api/driver/students
+// @access  Private/Driver
+const getDriverStudents = async (req, res, next) => {
+    try {
+        const driverId = req.user._id;
+
+        const students = await ParentProfile.find({ connected_driver: driverId })
+            .populate('user', 'name phone');
+            
+        res.json(students);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getAllDrivers,
+    getDriverStudents
 };

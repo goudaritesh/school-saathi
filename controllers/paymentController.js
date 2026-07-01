@@ -168,9 +168,50 @@ const getDriverEarnings = async (req, res, next) => {
     }
 };
 
+// @desc    Send payment reminder to parent
+// @route   POST /api/payment/remind/:id
+// @access  Private/Driver
+const sendReminder = async (req, res, next) => {
+    try {
+        const payment = await Payment.findById(req.params.id).populate({
+            path: 'parent_profile',
+            populate: { path: 'user' }
+        });
+
+        if (!payment) {
+            res.status(404);
+            throw new Error('Invoice not found');
+        }
+
+        if (payment.driver.toString() !== req.user._id.toString()) {
+            res.status(403);
+            throw new Error('Not authorized to send reminder for this invoice');
+        }
+
+        if (payment.status === 'Paid') {
+            res.status(400);
+            throw new Error('Invoice is already paid');
+        }
+
+        const parentUser = payment.parent_profile.user;
+        if (parentUser && parentUser.fcm_token) {
+            await sendPushNotification(
+                parentUser.fcm_token,
+                'Fee Payment Reminder',
+                `Friendly reminder: Your van fee of ₹${payment.amount} for ${payment.month} is due. Please pay via the app.`
+            );
+        }
+
+        res.json({ message: 'Reminder sent successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getInvoices,
     createOrder,
     verifyPayment,
-    getDriverEarnings
+    getDriverEarnings,
+    sendReminder
 };
