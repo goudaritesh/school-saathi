@@ -79,7 +79,20 @@ const getDashboardStats = async (req, res, next) => {
 // @access  Private (Parent)
 const getAllDrivers = async (req, res, next) => {
     try {
-        const drivers = await DriverProfile.find().populate('user', 'name phone email driverCode');
+        const drivers = await DriverProfile.find().populate('user', 'name phone email');
+        
+        // Auto-generate reference codes for legacy drivers if missing
+        let modified = false;
+        for (let driver of drivers) {
+            if (!driver.reference_code) {
+                // Generate a random 6-digit code
+                driver.reference_code = Math.floor(100000 + Math.random() * 900000).toString();
+                await driver.save();
+                modified = true;
+            }
+        }
+        
+        // If any were modified, return the updated list (or just return the modified objects in memory)
         res.json(drivers);
     } catch (error) {
         next(error);

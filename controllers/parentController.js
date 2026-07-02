@@ -16,6 +16,12 @@ const getDashboardStats = async (req, res, next) => {
             throw new Error('Parent profile not found');
         }
 
+        // Auto-generate QR code for legacy profiles that might be missing it
+        if (!profile.qr_code_data) {
+            profile.qr_code_data = `SVC-${parentId.toString()}`;
+            await profile.save();
+        }
+
         let liveStatus = {
             message: 'Waiting for updates',
             state: 'Inactive'
