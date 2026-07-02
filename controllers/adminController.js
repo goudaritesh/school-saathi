@@ -4,6 +4,10 @@ const ParentProfile = require('../models/ParentProfile');
 const Payment = require('../models/Payment');
 const Attendance = require('../models/Attendance');
 const Notification = require('../models/Notification');
+const Vehicle = require('../models/Vehicle');
+const Route = require('../models/Route');
+const Complaint = require('../models/Complaint');
+const Leave = require('../models/Leave');
 
 // @desc    Get system stats for Admin Dashboard
 // @route   GET /api/admin/stats
@@ -13,15 +17,36 @@ const getSystemStats = async (req, res, next) => {
         const totalUsers = await User.countDocuments();
         const totalDrivers = await User.countDocuments({ role: 'Driver' });
         const totalParents = await User.countDocuments({ role: 'Parent' });
-        
-        const paidPayments = await Payment.find({ status: 'Paid' });
-        const totalRevenue = paidPayments.reduce((sum, payment) => sum + payment.amount, 0);
+        const parents = await ParentProfile.find();
+        let totalStudents = parents.length; // Each ParentProfile represents 1 child in this schema
+
+        const activeVans = await Vehicle.countDocuments({ status: 'Active' });
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayAttendance = await Attendance.find({ date: { $gte: today } });
+        const todayPickup = todayAttendance.filter(a => a.status === 'Present').length;
+        const todayDrop = todayAttendance.filter(a => a.droppedOffTime).length;
+
+        const payments = await Payment.find();
+        const totalRevenue = payments.filter(p => p.status === 'Paid').reduce((sum, payment) => sum + payment.amount, 0);
+        const pendingFees = payments.filter(p => p.status === 'Pending').reduce((sum, payment) => sum + payment.amount, 0);
+
+        const complaints = await Complaint.countDocuments({ status: 'Pending' });
+        const leaveRequests = await Leave.countDocuments({ status: 'Pending' });
 
         res.json({
             totalUsers,
             totalDrivers,
             totalParents,
+            totalStudents,
+            activeVans,
+            todayPickup,
+            todayDrop,
+            pendingFees,
             totalRevenue,
+            complaints,
+            leaveRequests
         });
     } catch (error) {
         next(error);
@@ -111,16 +136,13 @@ const getAllStudents = async (req, res, next) => {
         let students = [];
         
         parents.forEach(parent => {
-            parent.children.forEach(child => {
-                students.push({
-                    studentId: child._id,
-                    name: child.name,
-                    age: child.age,
-                    class: child.class_info,
-                    parentName: parent.user.name,
-                    driverName: parent.connected_driver ? parent.connected_driver.name : 'Unassigned',
-                    address: parent.address
-                });
+            students.push({
+                studentId: parent._id,
+                name: parent.child_name,
+                class: parent.class_info,
+                parentName: parent.user ? parent.user.name : 'Unknown',
+                driverName: parent.connected_driver ? parent.connected_driver.name : 'Unassigned',
+                address: parent.pickup_address || parent.drop_address || 'N/A'
             });
         });
 
@@ -136,9 +158,12 @@ const getAllStudents = async (req, res, next) => {
 const getFeeReports = async (req, res, next) => {
     try {
         const payments = await Payment.find()
-            .populate('parent', 'name')
+            .populate({
+                path: 'parent_profile',
+                populate: { path: 'user', select: 'name' }
+            })
             .populate('driver', 'name')
-            .sort({ dueDate: -1 });
+            .sort({ createdAt: -1 });
             
         res.json(payments);
     } catch (error) {
@@ -153,7 +178,10 @@ const getAttendanceReports = async (req, res, next) => {
     try {
         const attendance = await Attendance.find()
             .populate('driver', 'name')
-            .populate('parent', 'name')
+            .populate({
+                path: 'parent_profile',
+                populate: { path: 'user', select: 'name' }
+            })
             .sort({ date: -1 });
             
         res.json(attendance);
@@ -190,6 +218,31 @@ const broadcastNotification = async (req, res, next) => {
         next(error);
     }
 };
+// @desc    Get all vehicles
+// @route   GET /api/admin/vehicles
+// @access  Private/Admin
+const getAllVehicles = async (req, res, next) => {
+    try {
+        const vehicles = await Vehicle.find().populate('driver', 'name');
+        res.json(vehicles);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get all routes
+// @route   GET /api/admin/routes
+// @access  Private/Admin
+const getAllRoutes = async (req, res, next) => {
+    try {
+        const routes = await Route.find()
+            .populate('assignedVehicle', 'vehicleNumber')
+            .populate('assignedDriver', 'name');
+        res.json(routes);
+    } catch (error) {
+        next(error);
+    }
+};
 
 module.exports = {
     getSystemStats,
@@ -200,5 +253,7 @@ module.exports = {
     getAllStudents,
     getFeeReports,
     getAttendanceReports,
-    broadcastNotification
+    broadcastNotification,
+    getAllVehicles,
+    getAllRoutes
 };

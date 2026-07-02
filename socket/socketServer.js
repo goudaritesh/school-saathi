@@ -1,5 +1,7 @@
 const { Server } = require('socket.io');
 const Message = require('../models/Message');
+const User = require('../models/User');
+const admin = require('../config/firebase');
 
 let io;
 
@@ -70,14 +72,42 @@ const initializeSocket = (server) => {
                     sender: data.senderId,
                     receiver: data.receiverId,
                     text: data.text || '',
+                    messageType: data.messageType || 'text',
                     imageUrl: data.imageUrl || null
                 });
-                await msg.save();
                 
                 // Find if receiver is online
                 const receiverSocketId = onlineDrivers.get(data.receiverId) || onlineParents.get(data.receiverId);
+                
                 if (receiverSocketId) {
+                    msg.delivered = true;
+                    await msg.save();
                     io.to(receiverSocketId).emit("receiveMessage", msg);
+                } else {
+                    await msg.save();
+                    // Send Push Notification
+                    const receiverUser = await User.findById(data.receiverId);
+                    if (receiverUser && receiverUser.fcm_token) {
+                        const senderUser = await User.findById(data.senderId);
+                        const senderName = senderUser ? senderUser.name : 'New Message';
+                        const payload = {
+                            notification: {
+                                title: senderName,
+                                body: data.text || '📸 Image',
+                            },
+                            data: {
+                                type: 'chat',
+                                senderId: data.senderId,
+                                messageId: msg._id.toString()
+                            },
+                            token: receiverUser.fcm_token,
+                        };
+                        try {
+                            await admin.messaging().send(payload);
+                        } catch(err) {
+                            console.error('FCM Send Error:', err);
+                        }
+                    }
                 }
                 
                 // Confirm sent to sender
@@ -101,15 +131,27 @@ const initializeSocket = (server) => {
             }
         });
 
-        socket.on("markAsRead", async (data) => {
+        socket.on("messageDelivered", async (data) => {
             try {
-                await Message.findByIdAndUpdate(data.messageId, { isRead: true });
+                await Message.findByIdAndUpdate(data.messageId, { delivered: true });
                 const senderSocketId = onlineDrivers.get(data.senderId) || onlineParents.get(data.senderId);
                 if (senderSocketId) {
-                    io.to(senderSocketId).emit("messageRead", { messageId: data.messageId, readAt: new Date() });
+                    io.to(senderSocketId).emit("messageDeliveredConfirm", { messageId: data.messageId, deliveredAt: new Date() });
                 }
             } catch(err) {
-                console.error("MarkAsRead Error:", err);
+                console.error("MessageDelivered Error:", err);
+            }
+        });
+
+        socket.on("messageSeen", async (data) => {
+            try {
+                await Message.findByIdAndUpdate(data.messageId, { seen: true, isRead: true });
+                const senderSocketId = onlineDrivers.get(data.senderId) || onlineParents.get(data.senderId);
+                if (senderSocketId) {
+                    io.to(senderSocketId).emit("messageSeenConfirm", { messageId: data.messageId, seenAt: new Date() });
+                }
+            } catch(err) {
+                console.error("MessageSeen Error:", err);
             }
         });
 

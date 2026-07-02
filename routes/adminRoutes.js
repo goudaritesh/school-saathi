@@ -9,7 +9,9 @@ const {
     getAllStudents,
     getFeeReports,
     getAttendanceReports,
-    broadcastNotification
+    broadcastNotification,
+    getAllVehicles,
+    getAllRoutes
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -21,6 +23,8 @@ router.get('/stats', getSystemStats);
 router.get('/drivers', getAllDrivers);
 router.get('/parents', getAllParents);
 router.get('/students', getAllStudents);
+router.get('/vehicles', getAllVehicles);
+router.get('/routes', getAllRoutes);
 
 // User Management
 router.put('/users/:id/status', updateUserStatus);

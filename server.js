@@ -16,12 +16,10 @@ const seedAdmin = async () => {
     try {
         const adminExists = await User.findOne({ email: 'admin@schoolvan.com' });
         if (!adminExists) {
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash('admin123', salt);
             await User.create({
                 name: 'Super Admin',
                 email: 'admin@schoolvan.com',
-                password: hashedPassword,
+                password: 'admin123',
                 phone: '1234567890',
                 role: 'Admin'
             });
