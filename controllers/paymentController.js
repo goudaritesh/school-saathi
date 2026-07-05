@@ -25,10 +25,27 @@ const getInvoices = async (req, res, next) => {
         // If no payments exist, let's create a dummy pending invoice for demonstration
         if (payments.length === 0 && profile.connected_driver) {
             const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+            
+            // Fetch fees from ConnectionRequest
+            const ConnectionRequest = require('../models/ConnectionRequest');
+            const connectionReq = await ConnectionRequest.findOne({
+                parentId: req.user._id,
+                driverId: profile.connected_driver,
+                status: 'accepted'
+            });
+            
+            let amountToCharge = 1500; // default fallback
+            if (connectionReq && connectionReq.fees) {
+                const parsedFees = parseFloat(connectionReq.fees);
+                if (!isNaN(parsedFees)) {
+                    amountToCharge = parsedFees;
+                }
+            }
+            
             const dummyPayment = await Payment.create({
                 parent_profile: profile._id,
                 driver: profile.connected_driver,
-                amount: 1500.00, // Updated to 1500 INR
+                amount: amountToCharge,
                 month: currentMonth,
                 status: 'Pending'
             });
