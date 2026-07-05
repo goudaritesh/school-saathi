@@ -79,7 +79,14 @@ const getDashboardStats = async (req, res, next) => {
 // @access  Private (Parent)
 const getAllDrivers = async (req, res, next) => {
     try {
-        const drivers = await DriverProfile.find().populate('user', 'name phone email');
+        const driversData = await DriverProfile.find().populate({
+            path: 'user',
+            select: 'name phone email isActive',
+            match: { isActive: true }
+        });
+        
+        // Filter out profiles where user is null (i.e., not active or deleted) or driver is not verified
+        const drivers = driversData.filter(driver => driver.user != null && driver.is_verified === true);
         
         // Auto-generate reference codes for legacy drivers if missing
         let modified = false;
@@ -106,9 +113,30 @@ const getDriverStudents = async (req, res, next) => {
     try {
         const driverId = req.user._id;
 
-        const students = await ParentProfile.find({ connected_driver: driverId })
-            .populate('user', 'name phone');
+        const studentsData = await ParentProfile.find({ connected_driver: driverId })
+            .populate('user', 'name phone').lean();
             
+        // Fetch today's attendance for these students
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const attendances = await Attendance.find({
+            driver: driverId,
+            date: { $gte: startOfDay }
+        }).sort({ createdAt: -1 }); // Get latest first
+        
+        // Map attendance to students
+        const students = studentsData.map(student => {
+            const studentAttendance = attendances.find(a => {
+                const aId = (a.parent_profile && a.parent_profile._id) ? a.parent_profile._id.toString() : a.parent_profile?.toString();
+                return aId === student._id.toString();
+            });
+            return {
+                ...student,
+                today_attendance: studentAttendance ? studentAttendance.status : 'Pending'
+            };
+        });
+
         res.json(students);
     } catch (error) {
         next(error);

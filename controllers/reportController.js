@@ -11,14 +11,14 @@ const getAttendanceReports = async (req, res) => {
         const driverId = req.user._id;
 
         const attendances = await Attendance.find({ driver: driverId })
-            .populate('parent', 'name');
+            .populate('parent_profile');
             
         // Calculate basic stats
         let totalPresent = 0;
         let totalAbsent = 0;
 
         attendances.forEach(a => {
-            if (a.status === 'Present') totalPresent++;
+            if (a.status === 'Picked Up' || a.status === 'Dropped Off') totalPresent++;
             if (a.status === 'Absent') totalAbsent++;
         });
 
