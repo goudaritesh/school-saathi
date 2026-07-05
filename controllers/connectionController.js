@@ -6,11 +6,11 @@ const DriverProfile = require('../models/DriverProfile');
 // Parent sends request to a driver using driver code
 const sendRequest = async (req, res) => {
     try {
-        const { driverCode } = req.body;
+        const { driverCode, routeAddress, schoolTiming } = req.body;
         const parentId = req.user._id;
 
-        if (!driverCode) {
-            return res.status(400).json({ message: "Driver Code Required" });
+        if (!driverCode || !routeAddress || !schoolTiming) {
+            return res.status(400).json({ message: "Driver Code, Route Address, and School Timing Required" });
         }
 
         const driverProfile = await DriverProfile.findOne({ reference_code: driverCode });
@@ -31,7 +31,9 @@ const sendRequest = async (req, res) => {
 
         await ConnectionRequest.create({
             parentId,
-            driverId: driverProfile.user
+            driverId: driverProfile.user,
+            routeAddress,
+            schoolTiming
         });
 
         res.status(201).json({ message: "Connection Request Sent" });
@@ -65,7 +67,10 @@ const acceptRequest = async (req, res) => {
             return res.status(404).json({ message: "Request Not Found" });
         }
 
+        const { fees } = req.body;
+
         request.status = "accepted";
+        request.fees = fees || '';
         await request.save();
 
         // Update the connected_driver field in ParentProfile instead of User
@@ -139,10 +144,59 @@ const myRequest = async (req, res) => {
     }
 };
 
+// Disconnect user (Parent or Driver)
+const disconnectUser = async (req, res) => {
+    try {
+        const { targetUserId } = req.body;
+        
+        let query = {
+            $or: [{ parentId: req.user._id }, { driverId: req.user._id }],
+            status: "accepted"
+        };
+
+        if (targetUserId) {
+            query = {
+                $or: [
+                    { parentId: req.user._id, driverId: targetUserId },
+                    { driverId: req.user._id, parentId: targetUserId }
+                ],
+                status: "accepted"
+            };
+        }
+
+        // Find an accepted request involving this user (and optionally targetUserId)
+        const request = await ConnectionRequest.findOne(query);
+
+        if (!request) {
+            return res.status(404).json({ message: "No active connection found" });
+        }
+
+        request.status = "disconnected";
+        await request.save();
+
+        // Clear connected_driver in ParentProfile
+        await ParentProfile.findOneAndUpdate(
+            { user: request.parentId },
+            { connected_driver: null }
+        );
+
+        // Increment available seats for Driver
+        await DriverProfile.findOneAndUpdate(
+            { user: request.driverId },
+            { $inc: { available_seats: 1 } }
+        );
+
+        res.status(200).json({ message: "Disconnected successfully" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     sendRequest,
     getPendingRequests,
     acceptRequest,
     rejectRequest,
-    myRequest
+    myRequest,
+    disconnectUser
 };
