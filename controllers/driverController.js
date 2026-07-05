@@ -143,8 +143,31 @@ const getDriverStudents = async (req, res, next) => {
     }
 };
 
+// @desc    Get attendance history for a specific student
+// @route   GET /api/driver/student/:id/attendance
+// @access  Private/Driver
+const getStudentAttendanceHistory = async (req, res, next) => {
+    try {
+        const driverId = req.user._id;
+        const studentId = req.params.id; // parent_profile_id
+
+        const history = await Attendance.find({
+            driver: driverId,
+            parent_profile: studentId
+        })
+        .sort({ date: -1, createdAt: -1 })
+        .limit(30)
+        .lean();
+
+        res.json(history);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getAllDrivers,
-    getDriverStudents
+    getDriverStudents,
+    getStudentAttendanceHistory
 };
