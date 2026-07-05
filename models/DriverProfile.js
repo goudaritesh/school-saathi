@@ -12,6 +12,26 @@ const driverProfileSchema = mongoose.Schema(
             required: [true, 'Please add a vehicle plate number'],
             uppercase: true,
         },
+        vehicle_model: {
+            type: String,
+        },
+        vehicle_color: {
+            type: String,
+        },
+        route_name: {
+            type: String,
+        },
+        total_seats: {
+            type: Number,
+            default: 0,
+        },
+        available_seats: {
+            type: Number,
+            default: 0,
+        },
+        experience_years: {
+            type: Number,
+        },
         license_no: {
             type: String,
             required: [true, 'Please add a driving license number'],

@@ -24,9 +24,10 @@ const applyLeave = async (req, res) => {
 
         // Notify Driver
         const notification = new Notification({
-            recipient: driverId,
+            senderId: req.user._id,
+            receiverId: driverId,
             title: 'New Leave Request',
-            body: `Leave request for ${studentName} from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`,
+            message: `Leave request for ${studentName} from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`,
             type: 'LEAVE',
             data: { leaveId: leave._id.toString() }
         });
@@ -62,9 +63,10 @@ const updateLeaveStatus = async (req, res) => {
 
         // Notify Parent
         const notification = new Notification({
-            recipient: leave.parent._id,
+            senderId: req.user._id,
+            receiverId: leave.parent._id,
             title: `Leave ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-            body: `Your leave request for ${leave.studentName} has been ${status}.`,
+            message: `Your leave request for ${leave.studentName} has been ${status}.`,
             type: 'LEAVE_STATUS',
             data: { leaveId: leave._id.toString(), status }
         });

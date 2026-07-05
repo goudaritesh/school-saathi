@@ -81,6 +81,12 @@ const acceptRequest = async (req, res) => {
             console.log("Updated Parent Profile:", updatedParent);
         }
 
+        // Decrement available seats for the driver
+        await DriverProfile.findOneAndUpdate(
+            { user: request.driverId },
+            { $inc: { available_seats: -1 } }
+        );
+
         res.status(200).json({ message: "Request Accepted" });
     } catch (error) {
         console.error(error);

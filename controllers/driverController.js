@@ -165,9 +165,70 @@ const getStudentAttendanceHistory = async (req, res, next) => {
     }
 };
 
+// @desc    Update Driver Profile (Personal and Van details)
+// @route   PUT /api/driver/profile
+// @access  Private/Driver
+const updateDriverProfile = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { name, phone, vehicle_no, route_name, total_seats, vehicle_model, vehicle_color } = req.body;
+
+        // Update User Model (name, phone)
+        const user = await req.user.constructor.findById(userId);
+        if (user) {
+            user.name = name || user.name;
+            user.phone = phone || user.phone;
+            await user.save();
+        }
+
+        // Update DriverProfile Model
+        const profile = await DriverProfile.findOne({ user: userId });
+        if (!profile) {
+            res.status(404);
+            throw new Error('Driver profile not found');
+        }
+
+        profile.vehicle_no = vehicle_no || profile.vehicle_no;
+        profile.route_name = route_name || profile.route_name;
+        profile.vehicle_model = vehicle_model || profile.vehicle_model;
+        profile.vehicle_color = vehicle_color || profile.vehicle_color;
+        
+        if (total_seats !== undefined) {
+            const oldTotal = profile.total_seats || 0;
+            const difference = Number(total_seats) - oldTotal;
+            profile.total_seats = Number(total_seats);
+            profile.available_seats = (profile.available_seats || 0) + difference;
+            
+            // Ensure available_seats doesn't go below 0 if they decrease total seats too much
+            if (profile.available_seats < 0) profile.available_seats = 0;
+        }
+
+        await profile.save();
+
+        res.json({
+            message: 'Profile updated successfully',
+            user: {
+                name: user.name,
+                phone: user.phone,
+            },
+            profile: {
+                vehicle_no: profile.vehicle_no,
+                route_name: profile.route_name,
+                vehicle_model: profile.vehicle_model,
+                vehicle_color: profile.vehicle_color,
+                total_seats: profile.total_seats,
+                available_seats: profile.available_seats
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getAllDrivers,
     getDriverStudents,
-    getStudentAttendanceHistory
+    getStudentAttendanceHistory,
+    updateDriverProfile
 };

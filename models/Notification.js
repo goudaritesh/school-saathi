@@ -23,7 +23,12 @@ const notificationSchema = new mongoose.Schema({
             'Emergency',
             'Route Change',
             'Delay',
-            'Broadcast'
+            'Broadcast',
+            'COMPLAINT',
+            'COMPLAINT_STATUS',
+            'COMPLAINT_REPLY',
+            'LEAVE',
+            'LEAVE_STATUS'
         ],
         required: true
     },

@@ -30,7 +30,7 @@ const getChatHistory = async (req, res) => {
         .skip(skip)
         .limit(limit);
 
-        res.json(messages.reverse()); // Reverse to get chronological order in frontend
+        res.json(messages); // Send newest first for reversed ListView
     } catch (error) {
         console.error('Chat history error:', error);
         res.status(500).json({ message: 'Server Error' });
@@ -103,8 +103,26 @@ const getConversations = async (req, res) => {
     }
 };
 
+const deleteMessage = async (req, res) => {
+    try {
+        const message = await Message.findById(req.params.messageId);
+        if (!message) {
+            return res.status(404).json({ message: 'Message not found' });
+        }
+        if (message.sender.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+        await message.deleteOne();
+        res.json({ message: 'Message removed' });
+    } catch (error) {
+        console.error('Delete message error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
 module.exports = {
     getChatHistory,
     uploadChatImage,
-    getConversations
+    getConversations,
+    deleteMessage
 };

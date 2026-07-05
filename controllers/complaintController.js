@@ -21,9 +21,10 @@ const createComplaint = async (req, res) => {
 
         // Notify Driver
         const notification = new Notification({
-            recipient: driverId,
+            senderId: req.user._id,
+            receiverId: driverId,
             title: 'New Complaint Received',
-            body: `Subject: ${subject}`,
+            message: `Subject: ${subject}`,
             type: 'COMPLAINT',
             data: { complaintId: complaint._id.toString() }
         });
@@ -88,9 +89,10 @@ const updateComplaintStatus = async (req, res) => {
             : complaint.parent;
 
         const notification = new Notification({
-            recipient: notifyTarget,
+            senderId: req.user._id,
+            receiverId: notifyTarget,
             title: 'Complaint Status Updated',
-            body: `Complaint "${complaint.subject}" is now ${status}.`,
+            message: `Complaint "${complaint.subject}" is now ${status}.`,
             type: 'COMPLAINT_STATUS',
             data: { complaintId: complaint._id.toString(), status }
         });
@@ -136,9 +138,10 @@ const addComplaintResponse = async (req, res) => {
             : complaint.parent;
 
         const notification = new Notification({
-            recipient: notifyTarget,
+            senderId: req.user._id,
+            receiverId: notifyTarget,
             title: 'New Response on Complaint',
-            body: `${req.user.name} responded to "${complaint.subject}"`,
+            message: `${req.user.name} responded to "${complaint.subject}"`,
             type: 'COMPLAINT_REPLY',
             data: { complaintId: complaint._id.toString() }
         });
