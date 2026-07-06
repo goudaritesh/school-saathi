@@ -76,7 +76,6 @@ const initializeSocket = (server) => {
                     imageUrl: data.imageUrl || null
                 });
                 
-                // Find if receiver is online
                 const receiverSocketId = onlineDrivers.get(data.receiverId) || onlineParents.get(data.receiverId);
                 
                 if (receiverSocketId) {
@@ -85,28 +84,29 @@ const initializeSocket = (server) => {
                     io.to(receiverSocketId).emit("receiveMessage", msg);
                 } else {
                     await msg.save();
-                    // Send Push Notification
-                    const receiverUser = await User.findById(data.receiverId);
-                    if (receiverUser && receiverUser.fcm_token) {
-                        const senderUser = await User.findById(data.senderId);
-                        const senderName = senderUser ? senderUser.name : 'New Message';
-                        const payload = {
-                            notification: {
-                                title: senderName,
-                                body: data.text || '📸 Image',
-                            },
-                            data: {
-                                type: 'chat',
-                                senderId: data.senderId,
-                                messageId: msg._id.toString()
-                            },
-                            token: receiverUser.fcm_token,
-                        };
-                        try {
-                            await admin.messaging().send(payload);
-                        } catch(err) {
-                            console.error('FCM Send Error:', err);
-                        }
+                }
+
+                // Send Push Notification
+                const receiverUser = await User.findById(data.receiverId);
+                if (receiverUser && receiverUser.fcm_token) {
+                    const senderUser = await User.findById(data.senderId);
+                    const senderName = senderUser ? senderUser.name : 'New Message';
+                    const payload = {
+                        notification: {
+                            title: senderName,
+                            body: data.text || '📸 Image',
+                        },
+                        data: {
+                            type: 'chat',
+                            senderId: data.senderId,
+                            messageId: msg._id.toString()
+                        },
+                        token: receiverUser.fcm_token,
+                    };
+                    try {
+                        await admin.messaging().send(payload);
+                    } catch(err) {
+                        console.error('FCM Send Error:', err);
                     }
                 }
                 
