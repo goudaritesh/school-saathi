@@ -12,12 +12,16 @@ const {
     getPendingRequests,
     acceptRequest,
     rejectRequest,
-    myRequest
+    myRequest,
+    disconnectUser
 } = require("../controllers/connectionController");
 
 // Parent routes
 router.post("/send-request", protect, sendRequest);
 router.get("/my-request", protect, myRequest);
+
+// Disconnect route (both Parent and Driver)
+router.put("/disconnect", protect, disconnectUser);
 
 // Driver routes
 router.get("/requests", protect, getPendingRequests);
