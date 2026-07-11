@@ -20,6 +20,7 @@ const leaveRoutes = require('./routes/leaveRoutes');
 const complaintRoutes = require('./routes/complaintRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const supportRoutes = require('./routes/supportRoutes');
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use('/api/leave', leaveRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/support', supportRoutes);
 
 // Serve File Uploads Statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

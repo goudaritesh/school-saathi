@@ -244,6 +244,36 @@ const getAllRoutes = async (req, res, next) => {
     }
 };
 
+// @desc    Get all complaints
+// @route   GET /api/admin/complaints
+// @access  Private/Admin
+const getAllComplaints = async (req, res, next) => {
+    try {
+        const complaints = await Complaint.find()
+            .populate('parent', 'name email role')
+            .populate('driver', 'name email role')
+            .sort({ createdAt: -1 });
+        res.json(complaints);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get all leave requests
+// @route   GET /api/admin/leaves
+// @access  Private/Admin
+const getAllLeaves = async (req, res, next) => {
+    try {
+        const leaves = await Leave.find()
+            .populate('parent', 'name email role')
+            .populate('driver', 'name email role')
+            .sort({ createdAt: -1 });
+        res.json(leaves);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getSystemStats,
     getAllDrivers,
@@ -255,5 +285,7 @@ module.exports = {
     getAttendanceReports,
     broadcastNotification,
     getAllVehicles,
-    getAllRoutes
+    getAllRoutes,
+    getAllComplaints,
+    getAllLeaves
 };

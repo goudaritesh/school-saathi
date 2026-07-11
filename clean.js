@@ -1,0 +1,1 @@
+const mongoose = require('mongoose'); mongoose.connect('mongodb+srv://goudariteshkumar1_db_user:g2iChhQXdSonfPLW@cluster0.ib5tcmx.mongodb.net/?appName=Cluster0').then(async () => { const result = await mongoose.connection.db.collection('connectionrequests').deleteMany({ status: 'pending' }); console.log('Deleted:', result.deletedCount); process.exit(0); });
