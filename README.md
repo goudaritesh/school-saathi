@@ -10,12 +10,11 @@ A production-inspired comprehensive solution for school transport management, fe
 - **Automated Notifications**: Real-time push notifications for vehicle arrival, boarding, and dropping using Firebase (FCM).
 - **Payment Integration**: Razorpay-integrated fee settlement flow.
 
-## Live Demo, Repository & APK
+## Repository & Links
 | Resource | Link |
 | --- | --- |
 | **Android APK** | [Download App (app-debug.apk)](https://github.com/goudaritesh/school-saathi/releases) |
-| **Admin Dashboard** | Localhost Setup Required |
-| **Backend API** | Localhost Setup Required |
+| **Backend API** | [Render Live URL](https://school-sathi-backend.onrender.com) |
 
 ## Detailed Engineering Documentation
 | Component | Description |
