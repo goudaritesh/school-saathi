@@ -62,3 +62,6 @@ backend/*service-account*.json
 admin-panel/node_modules/
 admin-panel/dist/
 admin-panel/.env*
+
+# Root level
+.env
