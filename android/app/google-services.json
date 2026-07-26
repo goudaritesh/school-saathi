@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "605409528961",
+    "project_id": "school-van-management",
+    "storage_bucket": "school-van-management.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:605409528961:android:91b739faff633207d79180",
+        "android_client_info": {
+          "package_name": "com.example.school_sathi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqa4UyAeD7jW9y1K8Lz9QVvNroU5QXb1M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:605409528961:android:b4d00fafb411af50d79180",
+        "android_client_info": {
+          "package_name": "com.example.school_van_connect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqa4UyAeD7jW9y1K8Lz9QVvNroU5QXb1M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
