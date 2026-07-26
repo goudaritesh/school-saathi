@@ -65,3 +65,4 @@ admin-panel/.env*
 
 # Root level
 .env
+android/app/google-services.json
