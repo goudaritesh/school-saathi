@@ -13,7 +13,9 @@ A production-inspired comprehensive solution for school transport management, fe
 ## Live Demo, Repository & APK
 | Resource | Link |
 | --- | --- |
-| **Android APK** | [Download App (app-debug.apk)](./build/app/outputs/flutter-apk/app-debug.apk) |
+| **Android APK** | [Download App (app-debug.apk)](https://github.com/goudaritesh/school-saathi/releases) |
+| **Admin Dashboard** | Localhost Setup Required |
+| **Backend API** | Localhost Setup Required |
 
 ## Detailed Engineering Documentation
 | Component | Description |
