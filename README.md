@@ -13,7 +13,7 @@ A production-inspired comprehensive solution for school transport management, fe
 ## Repository & Links
 | Resource | Link |
 | --- | --- |
-| **Android APK** | [Download App (app-debug.apk)](https://github.com/goudaritesh/school-saathi/releases) |
+| **Android APK** | [Download App (app-release.apk)](https://github.com/goudaritesh/school-saathi/raw/main/apk/app-release.apk) |
 | **Backend API** | [Render Live URL](https://school-sathi-backend.onrender.com) |
 
 ## Detailed Engineering Documentation
