@@ -8,6 +8,7 @@ let io;
 // Store Online Users
 const onlineDrivers = new Map();
 const onlineParents = new Map();
+const driverLocations = new Map(); // Cache last known locations
 
 const initializeSocket = (server) => {
     io = new Server(server, {
@@ -40,12 +41,25 @@ const initializeSocket = (server) => {
         socket.on("updateLocation", (data) => {
             // data should contain { driverId, lat, lng }
             if (data && data.driverId) {
-                // Broadcast to any parent listening for this specific driver
-                socket.broadcast.emit(`driverLocationUpdate_${data.driverId}`, {
+                const locationData = {
                     lat: data.lat,
                     lng: data.lng,
                     timestamp: Date.now()
-                });
+                };
+                // Cache the latest location
+                driverLocations.set(data.driverId, locationData);
+
+                // Broadcast to any parent listening for this specific driver
+                socket.broadcast.emit(`driverLocationUpdate_${data.driverId}`, locationData);
+            }
+        });
+
+        // ==========================
+        // Request Last Known Location
+        // ==========================
+        socket.on("requestDriverLocation", (driverId) => {
+            if (driverId && driverLocations.has(driverId)) {
+                socket.emit(`driverLocationUpdate_${driverId}`, driverLocations.get(driverId));
             }
         });
 

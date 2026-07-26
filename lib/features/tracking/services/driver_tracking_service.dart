@@ -56,6 +56,22 @@ class DriverTrackingService {
 
     _isTracking = true;
 
+    // Get initial position immediately so we don't have to wait for movement
+    try {
+      final initialPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      if (_socket != null && _socket!.connected) {
+        _socket!.emit('updateLocation', {
+          'driverId': driverId,
+          'lat': initialPosition.latitude,
+          'lng': initialPosition.longitude,
+        });
+      }
+    } catch (e) {
+      print("Could not get initial position: $e");
+    }
+
     // Set settings for stream
     const LocationSettings locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,

@@ -43,7 +43,10 @@ class _ParentTrackingScreenState extends State<ParentTrackingScreen> {
     _socket?.onConnect((_) {
       print('Parent Tracking Socket connected');
       // If we need to notify server
-      _socket?.emit('parentOnline', widget.driverId);
+      _socket?.emit('parentOnline', widget.driverId); // Note: Could be parentId, keeping for compatibility
+      
+      // Request last known location immediately
+      _socket?.emit('requestDriverLocation', widget.driverId);
     });
 
     _socket?.onConnectError((err) => print('Socket Connect Error: $err'));
